@@ -116,5 +116,10 @@ function start() {
     //downloadAudioChunk();
 }
 
-media_source.addEventListener('sourceopen', start, false);
-media_source.addEventListener('webkitsourceopen', start, false);
+// media_source.addEventListener('sourceopen', start, false);
+// media_source.addEventListener('webkitsourceopen', start, false);
+new DashManifest('http://localhost:8888/mpegdash/radiohead.mp4/manifest.mpd', function(_self) {
+    for(var i = 1; i < 10; i++) {
+        console.log(_self.getChunk('video/mp4', i));
+    }
+});

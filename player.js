@@ -119,7 +119,10 @@ function start() {
 // media_source.addEventListener('sourceopen', start, false);
 // media_source.addEventListener('webkitsourceopen', start, false);
 new DashManifest('http://localhost:8888/mpegdash/radiohead.mp4/manifest.mpd', function(_self) {
-    for(var i = 1; i < 10; i++) {
-        console.log(_self.getChunk('video/mp4', i));
-    }
+    var representation = _self.selectRepresentation('video/mp4', 1000000000);
+    console.log(representation);
+    var init = _self.getInitialization(representation);
+    console.log(init);
+    var chunk_url = _self.getChunkUrl(representation, 1);
+    console.log(chunk_url);
 });

@@ -34,8 +34,10 @@ DashManifest.prototype.parse = function (xml) {
             SegmentTemplate: {},
             Representation: []
         }
-
+        var mimeType = null;
+        var urlTemplate = null;
         for(var i = 0; i < representation_elements.length; i++) {
+            mimeType = representation_elements[i].getAttribute('mimeType');
             var r = {
                 id: representation_elements[i].getAttribute('id'),
                 mimeType: representation_elements[i].getAttribute('mimeType'),
@@ -48,13 +50,14 @@ DashManifest.prototype.parse = function (xml) {
             }
             as.Representation.push(r);
         }
-
+        as.mimeType = mimeType;
         tmp = tmp.getElementsByTagName('SegmentTemplate')[0];
         var st = {
             timescale: tmp.getAttribute('timescale'),
             media: tmp.getAttribute('media'),
             initialization: tmp.getAttribute('initialization'),
             startNumber: tmp.getAttribute('startNumber'),
+            mimeType: mimeType,
             SegmentTimeline: {
                 s: []
             }
@@ -75,26 +78,42 @@ DashManifest.prototype.parse = function (xml) {
     _self.loaded(_self);
 }
 
-DashManifest.prototype.getInitialization = function (mime) {
+DashManifest.prototype.getInitialization = function (representation) {
     _self = this;
     for(var i = 0; i < _self.adaptation_sets.length; i++) {
-        for(var j = 0; j < _self.adaptation_sets[i].Representation.length; j++) {
-            if(_self.adaptation_sets[i].Representation[j].mimeType == mime) {
-                return _self.adaptation_sets[i].Representation[j].initialization;
-            }
+        if(_self.adaptation_sets[i].mimeType == representation.mimeType) {
+            return _self.adaptation_sets[i].SegmentTemplate.initialization.replace('$RepresentationID$', representation.id);
         }
     }
 }
 
-DashManifest.prototype.getChunk = function (mime, number) {
+DashManifest.prototype.getChunkUrl = function (representation, number) {
     _self = this;
     for(var i = 0; i < _self.adaptation_sets.length; i++) {
+        if(_self.adaptation_sets[i].mimeType == representation.mimeType) {
+            media = _self.adaptation_sets[i].SegmentTemplate.media.replace('$Number$', number);
+            media = media.replace('$RepresentationID$', representation.id);
+            return media;
+        }
+    }
+}
+
+DashManifest.prototype.selectRepresentation = function (mime, bandwidth) {
+    _self = this;
+    var current_representation = null;
+    for(var i = 0; i < _self.adaptation_sets.length; i++) {
+        if(_self.adaptation_sets[i].mimeType != mime) {
+            continue;
+        }
+
         for(var j = 0; j < _self.adaptation_sets[i].Representation.length; j++) {
-            if(_self.adaptation_sets[i].Representation[j].mimeType == mime) {
-                media = _self.adaptation_sets[i].SegmentTemplate.media.replace('$Number$', number);
-                media = media.replace('$RepresentationID$', _self.adaptation_sets[i].Representation[j].id);
-                return media;
+            if(_self.adaptation_sets[i].Representation[j].bandwidth < bandwidth) {
+                if(current_representation != null && current_representation.bandwidth > bandwidth) {
+                    continue;
+                }
+                current_representation = _self.adaptation_sets[i].Representation[j];
             }
         }
     }
+    return current_representation;
 }

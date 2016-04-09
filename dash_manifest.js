@@ -36,17 +36,17 @@ DashManifest.prototype.parse = function (xml) {
         }
         var mimeType = null;
         var urlTemplate = null;
-        for(var i = 0; i < representation_elements.length; i++) {
-            mimeType = representation_elements[i].getAttribute('mimeType');
+        for(var j = 0; j < representation_elements.length; j++) {
+            mimeType = representation_elements[j].getAttribute('mimeType');
             var r = {
-                id: representation_elements[i].getAttribute('id'),
-                mimeType: representation_elements[i].getAttribute('mimeType'),
-                codecs: representation_elements[i].getAttribute('codecs'),
-                width: representation_elements[i].getAttribute('width'),
-                height: representation_elements[i].getAttribute('height'),
-                frameRate: representation_elements[i].getAttribute('frameRate'),
-                startWithSAP: representation_elements[i].getAttribute('startWithSAP'),
-                bandwidth: representation_elements[i].getAttribute('bandwidth')
+                id: representation_elements[j].getAttribute('id'),
+                mimeType: representation_elements[j].getAttribute('mimeType'),
+                codecs: representation_elements[j].getAttribute('codecs'),
+                width: representation_elements[j].getAttribute('width'),
+                height: representation_elements[j].getAttribute('height'),
+                frameRate: representation_elements[j].getAttribute('frameRate'),
+                startWithSAP: representation_elements[j].getAttribute('startWithSAP'),
+                bandwidth: representation_elements[j].getAttribute('bandwidth')
             }
             as.Representation.push(r);
         }

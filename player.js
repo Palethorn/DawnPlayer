@@ -37,8 +37,10 @@ var mime_type = 'video/mp4';
 
 var video = document.querySelector('#player');
 var media_source = new MediaSource();
+media_source.addEventListener('sourceopen', start, false);
+media_source.addEventListener('webkitsourceopen', start, false);
 var video_source_buffer;
-var audio_source_buffer
+var audio_source_buffer;
 video.src = window.URL.createObjectURL(media_source);
 
 var current_video_chunk = 0;
@@ -76,31 +78,23 @@ function appendVideoChunk(chunk) {
     if(video.paused) {
         video.play();
     }
-    return;
-    var file = new Blob([chunk], {type: 'video/mp4'});
-    var reader = new FileReader();
-
-    reader.onload = function(e) {
-        video_source_buffer.appendBuffer(new Uint8Array(e.target.result));
-    };
-    reader.readAsArrayBuffer(file);
 }
 
 function appendAudioChunk(chunk) {
-    var file = new Blob([chunk], {type: 'audio/mp4'});
-    var reader = new FileReader();
-
-    reader.onload = function(e) {
-        audio_source_buffer.appendBuffer(new Uint8Array(e.target.result));
-        current_audio_chunk++;
-        //downloadAudioChunk(current_audio_chunk);
-    };
-    reader.readAsArrayBuffer(file);
+    audio_source_buffer.appendBuffer(chunk);
 }
 
 function start() {
-    video_source_buffer = media_source.addSourceBuffer('video/mp4; codecs="avc1.640028"');
-    //audio_source_buffer = media_source.addSourceBuffer('audio/mp4; codecs="mp4a.40.2"');
+    audio_source_buffer = media_source.addSourceBuffer('audio/mp4; codecs="mp4a.40.2"');
+    audio_source_buffer.addEventListener('updateend', function() {
+        console.log("updateend");
+        current_audio_chunk++;
+        if(current_audio_chunk < audio_chunklist.length) {
+            downloadAudioChunk(current_audio_chunk);
+        }
+    }, false);
+
+    video_source_buffer = media_source.addSourceBuffer('video/mp4; codecs="avc1.64001f"');
     video_source_buffer.addEventListener('updateend', function() {
         console.log("updateend");
         current_video_chunk++;
@@ -109,20 +103,40 @@ function start() {
         }
     }, false);
 
-    var video = document.querySelector('video');
-    new LicenseManager(video, 'http://192.168.0.8/license', 'http://192.168.0.8:9090/proxy');
+    new DashManifest('http://localhost:8888/mpegdash/radiohead.mp4/manifest.mpd', function(_self) {
+        var video_representation = _self.selectRepresentation('video/mp4', 1000000000);
+        console.log(video_representation);
+        var init = _self.getInitialization(video_representation);
+        console.log(init);
+        var chunk_url = _self.getChunkUrl(video_representation, 1);
+        console.log(chunk_url);
+        video_chunklist = [];
+        video_chunklist.push(init);
+        for(var i = 1; i <= 10; i++) {
+            video_chunklist.push(_self.getChunkUrl(video_representation, i));
+        }
+        console.log(video_chunklist);
 
-    downloadVideoChunk();
+        var audio_representation = _self.selectRepresentation('audio/mp4', 1000000000);
+        console.log(audio_representation);
+        var init = _self.getInitialization(audio_representation);
+        console.log(init);
+        var chunk_url = _self.getChunkUrl(audio_representation, 1);
+        console.log(chunk_url);
+        audio_chunklist = [];
+        audio_chunklist.push(init);
+        for(var i = 1; i <= 10; i++) {
+            audio_chunklist.push(_self.getChunkUrl(audio_representation, i));
+        }
+        console.log(audio_chunklist);
+
+        downloadVideoChunk();
+        downloadAudioChunk();
+    });
+
+
+
+    //var video = document.querySelector('video');
+    //new LicenseManager(video, 'http://192.168.0.8/license', 'http://192.168.0.8:9090/proxy');
     //downloadAudioChunk();
 }
-
-// media_source.addEventListener('sourceopen', start, false);
-// media_source.addEventListener('webkitsourceopen', start, false);
-new DashManifest('http://localhost:8888/mpegdash/radiohead.mp4/manifest.mpd', function(_self) {
-    var representation = _self.selectRepresentation('video/mp4', 1000000000);
-    console.log(representation);
-    var init = _self.getInitialization(representation);
-    console.log(init);
-    var chunk_url = _self.getChunkUrl(representation, 1);
-    console.log(chunk_url);
-});
